@@ -76,7 +76,9 @@
   .top-bar .gap { flex: 1; }
 
   /* 비대칭 bento */
-  .bento { display: grid; grid-template-columns: 1.45fr 1fr; gap: 12px; align-items: start; }
+  .bento { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  .bento > div { display: flex; flex-direction: column; gap: 12px; }
+  .bento > div > .card { margin: 0; }
   .card {
     background: #fff; border: 1px solid #eaeaea; border-radius: 12px; padding: 14px;
   }
@@ -274,28 +276,15 @@
 
     <div class="bento">
 
-      <!-- LEFT: 진도(레벨·STEP) + 권수(별도 카드) -->
+      <!-- LEFT: 레벨 + 권수 + 배정 방식 -->
       <div>
-        <div class="card" id="progressCard">
+        <div class="card">
           <div class="card-h">
-            <h3>진도</h3>
+            <h3>레벨</h3>
             <span class="now" id="nowTag">K-A · STEP 1</span>
           </div>
-
-          <div class="sub-label">레벨</div>
           <div class="lvl-seg groups" id="lvlGroupSeg"></div>
           <div class="lvl-seg subs" id="lvlSubSeg"></div>
-
-          <div class="card-h" style="margin:14px 0 6px">
-            <div class="sub-label" style="margin:0">STEP</div>
-            <div class="state-tabs" id="stateTabs" title="QA: 상태 미리보기">
-              <button data-s="default" class="on" onclick="setStepState('default')">기본</button>
-              <button data-s="loading" onclick="setStepState('loading')">로딩</button>
-              <button data-s="empty" onclick="setStepState('empty')">빈</button>
-              <button data-s="error" onclick="setStepState('error')">오류</button>
-            </div>
-          </div>
-          <div class="step-region" id="stepRegion"></div>
         </div>
 
         <div class="card count-card">
@@ -312,23 +301,34 @@
             <button id="cntPlus" onclick="changeCount(1)" aria-label="권수 늘리기">&plus;</button>
           </div>
         </div>
-      </div>
 
-      <!-- RIGHT: 배정 시점 + 일정 -->
-      <div>
         <div class="card">
           <div class="card-h"><h3>다음 책을 언제 배정할까요?</h3></div>
           <div class="seg2" id="modeSeg">
             <button data-m="learning" onclick="setMode('learning')">학습 끝나면</button>
             <button data-m="weekly" class="on" onclick="setMode('weekly')">정해진 주기로</button>
           </div>
-
           <div id="weeklyBox">
             <div class="week-seg" id="weekSeg"></div>
             <div class="week-suffix">주마다 자동 배정</div>
           </div>
-
           <div class="update-note" id="modeNote"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: STEP + 일정 -->
+      <div>
+        <div class="card">
+          <div class="card-h">
+            <h3>STEP 선택</h3>
+            <div class="state-tabs" id="stateTabs" title="QA: 상태 미리보기">
+              <button data-s="default" class="on" onclick="setStepState('default')">기본</button>
+              <button data-s="loading" onclick="setStepState('loading')">로딩</button>
+              <button data-s="empty" onclick="setStepState('empty')">빈</button>
+              <button data-s="error" onclick="setStepState('error')">오류</button>
+            </div>
+          </div>
+          <div class="step-region" id="stepRegion"></div>
         </div>
 
         <div class="card">
