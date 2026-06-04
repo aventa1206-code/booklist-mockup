@@ -150,8 +150,11 @@
   .stepper button:hover { background: #f3f4f6; }
   .stepper button:disabled { opacity: .4; cursor: not-allowed; }
   .stepper .val { flex: 1; text-align: center; }
-  .stepper .val .big { font-size: 16px; font-weight: 800; color: #111827; font-variant-numeric: tabular-nums; }
+  .stepper .val .big { font-size: 20px; font-weight: 800; color: #111827; font-variant-numeric: tabular-nums; }
   .stepper .val .eq { font-size: 12px; color: #6b7280; margin-top: 1px; }
+  /* 권수 카드 — 눈에 띄게 살짝 강조 */
+  .count-card { border-color: #e9d5ff; }
+  .count-card .card-h h3 { color: #6d28d9; }
 
   /* 배정 방식 세그먼트 (3-equal cards 금지 → 세그먼트 컨트롤) */
   .seg2 { display: flex; border: 1px solid #e5e7eb; border-radius: 9px; overflow: hidden; }
@@ -271,46 +274,53 @@
 
     <div class="bento">
 
-      <!-- LEFT: 레벨 → STEP → 권수 (세로 종속 흐름) -->
-      <div class="card" id="progressCard">
-        <div class="card-h">
-          <h3>진도</h3>
-          <span class="now" id="nowTag">K-A · STEP 1</span>
+      <!-- LEFT: 진도(레벨·STEP) + 권수(별도 카드) -->
+      <div>
+        <div class="card" id="progressCard">
+          <div class="card-h">
+            <h3>진도</h3>
+            <span class="now" id="nowTag">K-A · STEP 1</span>
+          </div>
+
+          <div class="sub-label">레벨</div>
+          <div class="lvl-seg groups" id="lvlGroupSeg"></div>
+          <div class="lvl-seg subs" id="lvlSubSeg"></div>
+
+          <div class="card-h" style="margin:14px 0 6px">
+            <div class="sub-label" style="margin:0">STEP</div>
+            <div class="state-tabs" id="stateTabs" title="QA: 상태 미리보기">
+              <button data-s="default" class="on" onclick="setStepState('default')">기본</button>
+              <button data-s="loading" onclick="setStepState('loading')">로딩</button>
+              <button data-s="empty" onclick="setStepState('empty')">빈</button>
+              <button data-s="error" onclick="setStepState('error')">오류</button>
+            </div>
+          </div>
+          <div class="step-region" id="stepRegion"></div>
         </div>
 
-        <div class="sub-label">레벨</div>
-        <div class="lvl-seg groups" id="lvlGroupSeg"></div>
-        <div class="lvl-seg subs" id="lvlSubSeg"></div>
-
-        <div class="card-h" style="margin:14px 0 6px">
-          <div class="sub-label" style="margin:0">STEP</div>
-          <div class="state-tabs" id="stateTabs" title="QA: 상태 미리보기">
-            <button data-s="default" class="on" onclick="setStepState('default')">기본</button>
-            <button data-s="loading" onclick="setStepState('loading')">로딩</button>
-            <button data-s="empty" onclick="setStepState('empty')">빈</button>
-            <button data-s="error" onclick="setStepState('error')">오류</button>
+        <div class="card count-card">
+          <div class="card-h">
+            <h3>한 번에 배정할 권수</h3>
+            <span class="now" id="cntStepTag">1 STEP</span>
           </div>
-        </div>
-        <div class="step-region" id="stepRegion"></div>
-
-        <div class="sub-label">한 번에 배정할 권수 <span style="font-weight:600;color:#9ca3af">· 1 STEP = 4권</span></div>
-        <div class="stepper">
-          <button id="cntMinus" onclick="changeCount(-1)" aria-label="권수 줄이기">&minus;</button>
-          <div class="val">
-            <div class="big" id="cntBig">1 STEP · 4권</div>
-            <div class="eq" id="cntEq">한 번 배정에 STEP 1개 분량</div>
+          <div class="stepper">
+            <button id="cntMinus" onclick="changeCount(-1)" aria-label="권수 줄이기">&minus;</button>
+            <div class="val">
+              <div class="big" id="cntBig">4권</div>
+              <div class="eq">1 STEP = 4권</div>
+            </div>
+            <button id="cntPlus" onclick="changeCount(1)" aria-label="권수 늘리기">&plus;</button>
           </div>
-          <button id="cntPlus" onclick="changeCount(1)" aria-label="권수 늘리기">&plus;</button>
         </div>
       </div>
 
-      <!-- RIGHT: 배정 방식 + 일정 -->
+      <!-- RIGHT: 배정 시점 + 일정 -->
       <div>
         <div class="card">
-          <div class="card-h"><h3>자동 배정 방식</h3></div>
+          <div class="card-h"><h3>다음 책을 언제 배정할까요?</h3></div>
           <div class="seg2" id="modeSeg">
-            <button data-m="learning" onclick="setMode('learning')">완료 시 배정</button>
-            <button data-m="weekly" class="on" onclick="setMode('weekly')">주기 배정</button>
+            <button data-m="learning" onclick="setMode('learning')">학습 끝나면</button>
+            <button data-m="weekly" class="on" onclick="setMode('weekly')">정해진 주기로</button>
           </div>
 
           <div id="weeklyBox">
@@ -522,8 +532,8 @@ function changeCount(delta){
 }
 function renderCount(){
   const books = state.stepCount * 4;
-  document.getElementById('cntBig').textContent = `${state.stepCount} STEP · ${books}권`;
-  document.getElementById('cntEq').textContent = `한 번 배정에 STEP ${state.stepCount}개 분량`;
+  document.getElementById('cntStepTag').textContent = `${state.stepCount} STEP`;
+  document.getElementById('cntBig').textContent = `${books}권`;
   document.getElementById('cntMinus').disabled = state.stepCount <= 1;
   document.getElementById('cntPlus').disabled = state.stepCount >= MAX_STEPCOUNT;
   updateSummary();
@@ -536,8 +546,8 @@ function setMode(m){
   document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
   document.getElementById('weeklyBox').style.display = m === 'weekly' ? '' : 'none';
   document.getElementById('modeNote').innerHTML = m === 'weekly'
-    ? '매주 지정한 요일에 학생 학습 여부와 무관하게 다음 도서가 자동 배정됩니다.'
-    : '<b>리딩·러닝 완료</b> 시 다음 도서가 배정됩니다. 학생이 배정 도서를 다 풀어야 다음 배정이 진행됩니다.';
+    ? '정한 요일마다 자동으로 다음 책이 배정됩니다. <b>학생 진도와 무관</b>하게 진행돼요.'
+    : '지금 배정된 책의 <b>리딩·러닝을 다 풀면</b> 다음 책이 배정됩니다.';
   document.getElementById('dayBox').style.display = m === 'weekly' ? '' : 'none';
   updateSummary();
 }
@@ -618,7 +628,7 @@ function updateSummary(){
   document.getElementById('summaryLine').innerHTML = summaryHTML();
   const books = state.stepCount*4;
   document.getElementById('footSum').innerHTML =
-    `<b>${state.selLevel} STEP ${state.selStep}</b> · ${books}권 · ${state.mode==='weekly'? state.everyWeeks+'주마다' : '완료 시'}`;
+    `<b>${state.selLevel} STEP ${state.selStep}</b> · ${books}권 · ${state.mode==='weekly'? state.everyWeeks+'주마다' : '학습 끝나면'}`;
 }
 
 /* ===== 반 진도 ===== */
