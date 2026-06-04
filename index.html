@@ -157,6 +157,8 @@
   /* 권수 카드 — 눈에 띄게 살짝 강조 */
   .count-card { border-color: #e9d5ff; }
   .count-card .card-h h3 { color: #6d28d9; }
+  .count-direct { margin-top: 8px; font-size: 13px; color: #6b7280; display: flex; align-items: center; gap: 6px; }
+  .count-direct input { width: 66px; padding: 7px 9px; border: 1px solid #eaeaea; border-radius: 8px; font-size: 14px; text-align: center; font-variant-numeric: tabular-nums; }
 
   /* 배정 방식 세그먼트 (3-equal cards 금지 → 세그먼트 컨트롤) */
   .seg2 { display: flex; border: 1px solid #e5e7eb; border-radius: 9px; overflow: hidden; }
@@ -201,7 +203,7 @@
   /* sticky 저장 바 */
   .foot {
     padding: 12px 20px; border-top: 1px solid #eaeaea; background: #fbfbfa;
-    display: flex; gap: 10px; justify-content: space-between; align-items: center;
+    display: flex; gap: 10px; justify-content: flex-end; align-items: center;
     position: sticky; bottom: 0;
   }
   .foot .foot-sum { font-size: 12px; color: #6b7280; }
@@ -293,12 +295,15 @@
             <span class="now" id="cntStepTag">1 STEP</span>
           </div>
           <div class="stepper">
-            <button id="cntMinus" onclick="changeCount(-1)" aria-label="권수 줄이기">&minus;</button>
+            <button id="cntMinus" onclick="changeCount(-1)" aria-label="권수 4권 줄이기">&minus;</button>
             <div class="val">
               <div class="big" id="cntBig">4권</div>
               <div class="eq">1 STEP = 4권</div>
             </div>
-            <button id="cntPlus" onclick="changeCount(1)" aria-label="권수 늘리기">&plus;</button>
+            <button id="cntPlus" onclick="changeCount(1)" aria-label="권수 4권 늘리기">&plus;</button>
+          </div>
+          <div class="count-direct">
+            직접 입력 <input type="number" id="cntInput" min="1" max="40" value="4" onchange="onCountInput()"> 권 <span style="color:#9ca3af">(1~40)</span>
           </div>
         </div>
 
@@ -306,11 +311,13 @@
           <div class="card-h"><h3>다음 책을 언제 배정할까요?</h3></div>
           <div class="seg2" id="modeSeg">
             <button data-m="learning" onclick="setMode('learning')">학습 끝나면</button>
-            <button data-m="weekly" class="on" onclick="setMode('weekly')">정해진 주기로</button>
+            <button data-m="weekly" class="on" onclick="setMode('weekly')">매주</button>
           </div>
           <div id="weeklyBox">
+            <div class="sub-label">몇 주마다</div>
             <div class="week-seg" id="weekSeg"></div>
-            <div class="week-suffix">주마다 자동 배정</div>
+            <div class="sub-label" style="margin-top:12px">배정 요일</div>
+            <div class="day-chips" id="dayChips"></div>
           </div>
           <div class="update-note" id="modeNote"></div>
         </div>
@@ -319,15 +326,7 @@
       <!-- RIGHT: STEP + 일정 -->
       <div>
         <div class="card">
-          <div class="card-h">
-            <h3>STEP 선택</h3>
-            <div class="state-tabs" id="stateTabs" title="QA: 상태 미리보기">
-              <button data-s="default" class="on" onclick="setStepState('default')">기본</button>
-              <button data-s="loading" onclick="setStepState('loading')">로딩</button>
-              <button data-s="empty" onclick="setStepState('empty')">빈</button>
-              <button data-s="error" onclick="setStepState('error')">오류</button>
-            </div>
-          </div>
+          <div class="card-h"><h3>STEP 선택</h3></div>
           <div class="step-region" id="stepRegion"></div>
         </div>
 
@@ -340,10 +339,6 @@
             <div class="auto-hint" id="autoHint">시작일이 오늘로 자동 설정됨</div>
           </div>
           <input type="hidden" id="nextDay" value="5">
-          <div id="dayBox">
-            <div class="sub-label" style="margin:12px 0 0">다음 책 배정 요일</div>
-            <div class="day-chips" id="dayChips"></div>
-          </div>
         </div>
       </div>
 
@@ -351,7 +346,6 @@
   </div>
 
   <div class="foot">
-    <div class="foot-sum" id="footSum"></div>
     <button class="btn btn-primary" onclick="save()">진도 설정 저장</button>
   </div>
 </div>
@@ -415,15 +409,13 @@ let state = {
   selLevel: 'K-A',
   selStep: 1,
   pickerLevel: 'K-A',
-  stepCount: 1,            // 한 번에 배정할 STEP 수 (1 STEP = 4권)
+  count: 4,                // 한 번에 배정할 권수 (1 STEP = 4권)
   mode: 'weekly',          // weekly | learning
   everyWeeks: 1,
   startDate: todayDateOnly(),
 };
-const MAX_STEPCOUNT = 10;
 
 const SEL_RING = 'inset 0 0 0 2px #fff, 0 0 0 2px #2f3437';
-let stepState = 'default';
 let dirty = false;
 function markDirty(){ dirty = true; }
 
@@ -472,29 +464,10 @@ function selectLevelDefaultStep(forceStepReset=false){
   if(changed) setStartToToday();
 }
 
-/* ===== STEP (4종 상태) ===== */
-function setStepState(s){
-  stepState = s;
-  document.querySelectorAll('#stateTabs button').forEach(b => b.classList.toggle('on', b.dataset.s === s));
-  renderStepRegion();
-}
+/* ===== STEP ===== */
 function renderStepRegion(){
   const wrap = document.getElementById('stepRegion');
   wrap.innerHTML = '';
-  if(stepState === 'loading'){
-    const sk = document.createElement('div'); sk.className = 'skel-grid';
-    for(let i=0;i<12;i++){ const d=document.createElement('div'); d.className='skel'; sk.appendChild(d); }
-    wrap.appendChild(sk); return;
-  }
-  if(stepState === 'empty'){
-    wrap.innerHTML = '<div class="state-box"><span class="material-icons">inventory_2</span>이 레벨에 등록된 STEP이 없습니다.<br>다른 레벨을 선택해 주세요.</div>';
-    return;
-  }
-  if(stepState === 'error'){
-    wrap.innerHTML = '<div class="state-box error"><span class="material-icons">error_outline</span>STEP 정보를 불러오지 못했습니다.<button class="retry" onclick="setStepState(\'default\')">다시 시도</button></div>';
-    return;
-  }
-  // default
   const lvl = state.pickerLevel;
   const n = LEVEL_STEPS[lvl];
   const c = colorOf(lvl);
@@ -524,18 +497,26 @@ function updateNowTag(){
   updateSummary();
 }
 
-/* ===== 권수 스테퍼 (STEP 종속) ===== */
-function changeCount(delta){
-  const v = Math.min(MAX_STEPCOUNT, Math.max(1, state.stepCount + delta));
-  if(v !== state.stepCount){ state.stepCount = v; markDirty(); }
+/* ===== 권수 (스테퍼 ±1 STEP + 직접 입력) ===== */
+function changeCount(deltaSteps){
+  const v = Math.min(40, Math.max(4, state.count + deltaSteps*4));
+  if(v !== state.count){ state.count = v; markDirty(); }
+  renderCount();
+}
+function onCountInput(){
+  let v = parseInt(document.getElementById('cntInput').value);
+  if(isNaN(v) || v < 1) v = 1;
+  if(v > 40) v = 40;
+  if(v !== state.count) markDirty();
+  state.count = v;
   renderCount();
 }
 function renderCount(){
-  const books = state.stepCount * 4;
-  document.getElementById('cntStepTag').textContent = `${state.stepCount} STEP`;
-  document.getElementById('cntBig').textContent = `${books}권`;
-  document.getElementById('cntMinus').disabled = state.stepCount <= 1;
-  document.getElementById('cntPlus').disabled = state.stepCount >= MAX_STEPCOUNT;
+  document.getElementById('cntBig').textContent = `${state.count}권`;
+  document.getElementById('cntStepTag').textContent = (state.count % 4 === 0) ? `${state.count/4} STEP` : '직접 지정';
+  document.getElementById('cntInput').value = state.count;
+  document.getElementById('cntMinus').disabled = state.count <= 4;
+  document.getElementById('cntPlus').disabled = state.count >= 40;
   updateSummary();
 }
 
@@ -546,9 +527,8 @@ function setMode(m){
   document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
   document.getElementById('weeklyBox').style.display = m === 'weekly' ? '' : 'none';
   document.getElementById('modeNote').innerHTML = m === 'weekly'
-    ? '정한 요일마다 자동으로 다음 책이 배정됩니다. <b>학생 진도와 무관</b>하게 진행돼요.'
-    : '지금 배정된 책의 <b>리딩·러닝을 다 풀면</b> 다음 책이 배정됩니다.';
-  document.getElementById('dayBox').style.display = m === 'weekly' ? '' : 'none';
+    ? '정해진 요일마다 자동으로 다음 책이 배정됩니다.'
+    : '지금 배정된 책을 다 풀면 다음 책이 배정됩니다.';
   updateSummary();
 }
 function buildWeekSeg(){
@@ -616,7 +596,7 @@ function onDayChange(){
 /* ===== 요약 ===== */
 function summaryHTML(){
   const c = colorOf(state.selLevel);
-  const books = state.stepCount * 4;
+  const books = state.count;
   const lvlStep = `<b style="color:${c}">${state.selLevel} · STEP ${state.selStep}</b>`;
   const cnt = `<b style="color:${c}">${books}권</b>`;
   if(state.mode === 'learning'){
@@ -626,22 +606,18 @@ function summaryHTML(){
 }
 function updateSummary(){
   document.getElementById('summaryLine').innerHTML = summaryHTML();
-  const books = state.stepCount*4;
-  document.getElementById('footSum').innerHTML =
-    `<b>${state.selLevel} STEP ${state.selStep}</b> · ${books}권 · ${state.mode==='weekly'? state.everyWeeks+'주마다' : '학습 끝나면'}`;
 }
 
 /* ===== 반 진도 ===== */
-const CLASS_PRESET = { name:'1반', level:'G1-B', step:5, stepCount:1, mode:'weekly', everyWeeks:1, startDate:new Date('2026-06-01') };
+const CLASS_PRESET = { name:'1반', level:'G1-B', step:5, count:4, mode:'weekly', everyWeeks:1, startDate:new Date('2026-06-01') };
 let classMode = false;
 function openClassConfirm(){ document.getElementById('classConfirmBg').classList.add('show'); }
 function closeClassConfirm(){ document.getElementById('classConfirmBg').classList.remove('show'); }
 function applyClassProgress(){
   closeClassConfirm();
   state.selLevel = CLASS_PRESET.level; state.selStep = CLASS_PRESET.step; state.pickerLevel = CLASS_PRESET.level;
-  state.stepCount = CLASS_PRESET.stepCount; state.everyWeeks = CLASS_PRESET.everyWeeks;
+  state.count = CLASS_PRESET.count; state.everyWeeks = CLASS_PRESET.everyWeeks;
   state.startDate = new Date(CLASS_PRESET.startDate);
-  setStepState('default');
   buildLevelSeg(); renderStepRegion(); renderCount(); buildWeekSeg();
   setMode(CLASS_PRESET.mode);
   document.getElementById('startDate').value = fmtDate(state.startDate);
@@ -676,7 +652,7 @@ function save(){
   el.style.background = '#f0fdf4'; el.style.borderColor = '#bbf7d0';
   clearTimeout(window._saveT);
   window._saveT = setTimeout(()=>{ el.style.background='#faf9f7'; el.style.borderColor='#eaeaea'; updateSummary(); }, 3500);
-  toast(`저장됨 — ${state.selLevel} STEP ${state.selStep} · ${state.stepCount*4}권`);
+  toast(`저장됨 — ${state.selLevel} STEP ${state.selStep} · ${state.count}권`);
 }
 function toast(msg){
   const el = document.getElementById('toast');
