@@ -525,9 +525,9 @@ function buildLevelSeg() {
     b.onmouseenter = () => { if (!on) b.style.filter = 'brightness(0.92)'; };
     b.onmouseleave = () => { b.style.filter = 'none'; };
     b.onclick = () => {
-      // 그룹 변경 시 무조건 해당 레벨의 A단계 · STEP 1 선택
+      // 그룹 선택 시 무조건 해당 레벨의 A단계 · STEP 1 선택 (이미 같은 그룹이어도 강제 리셋)
       state.pickerLevel = grp + '-A';
-      selectLevelDefaultStep();
+      selectLevelDefaultStep(true);
     };
     gSeg.appendChild(b);
   });
@@ -557,8 +557,8 @@ function buildLevelSeg() {
 }
 
 // 레벨만 고르면 STEP 1로 기본 지정
-function selectLevelDefaultStep() {
-  const changed = state.selLevel !== state.pickerLevel;
+function selectLevelDefaultStep(forceStepReset = false) {
+  const changed = forceStepReset || state.selLevel !== state.pickerLevel;
   state.selLevel = state.pickerLevel;
   if (changed) { state.selStep = 1; markDirty(); }
   buildLevelSeg();
