@@ -76,9 +76,13 @@
   .top-bar .gap { flex: 1; }
 
   /* 비대칭 bento */
-  .bento { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  .bento { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; }
   .bento > div { display: flex; flex-direction: column; gap: 12px; }
   .bento > div > .card { margin: 0; }
+  .bento > div:first-child > .card { flex: 1; }   /* 좌측 레벨·STEP 카드가 우측 높이에 맞춰 채움 */
+  .schedule-card { margin-top: 12px; }
+  .schedule-row { display: grid; grid-template-columns: 240px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 720px) { .schedule-row { grid-template-columns: 1fr; } }
   .card {
     background: #fff; border: 1px solid #eaeaea; border-radius: 12px; padding: 14px;
   }
@@ -278,17 +282,23 @@
 
     <div class="bento">
 
-      <!-- LEFT: 레벨 + 권수 + 배정 방식 -->
+      <!-- LEFT: 레벨 · STEP (하나로) -->
       <div>
         <div class="card">
           <div class="card-h">
-            <h3>레벨</h3>
+            <h3>레벨 · STEP</h3>
             <span class="now" id="nowTag">K-A · STEP 1</span>
           </div>
+          <div class="sub-label">레벨</div>
           <div class="lvl-seg groups" id="lvlGroupSeg"></div>
           <div class="lvl-seg subs" id="lvlSubSeg"></div>
+          <div class="sub-label" style="margin-top:12px">STEP</div>
+          <div class="step-region" id="stepRegion"></div>
         </div>
+      </div>
 
+      <!-- RIGHT: 권수 + 배정 방식 -->
+      <div>
         <div class="card count-card">
           <div class="card-h">
             <h3>한 번에 배정할 권수</h3>
@@ -316,32 +326,29 @@
           <div id="weeklyBox">
             <div class="sub-label">몇 주마다</div>
             <div class="week-seg" id="weekSeg"></div>
-            <div class="sub-label" style="margin-top:12px">배정 요일</div>
-            <div class="day-chips" id="dayChips"></div>
           </div>
           <div class="update-note" id="modeNote"></div>
         </div>
       </div>
 
-      <!-- RIGHT: STEP + 일정 -->
-      <div>
-        <div class="card">
-          <div class="card-h"><h3>STEP 선택</h3></div>
-          <div class="step-region" id="stepRegion"></div>
-        </div>
+    </div>
 
-        <div class="card">
-          <div class="card-h"><h3>일정</h3></div>
-          <div class="field">
-            <label>시작일</label>
-            <input type="date" class="input" id="startDate" onchange="onDateChange()">
-            <div class="date-readable" id="dateReadable"></div>
-            <div class="auto-hint" id="autoHint">시작일이 오늘로 자동 설정됨</div>
-          </div>
-          <input type="hidden" id="nextDay" value="5">
+    <!-- BOTTOM: 일정(시작일 + 배정 요일) -->
+    <div class="card schedule-card">
+      <div class="card-h"><h3>일정</h3></div>
+      <div class="schedule-row">
+        <div class="field">
+          <label>시작일</label>
+          <input type="date" class="input" id="startDate" onchange="onDateChange()">
+          <div class="date-readable" id="dateReadable"></div>
+          <div class="auto-hint" id="autoHint">시작일이 오늘로 자동 설정됨</div>
+        </div>
+        <div id="dayBox">
+          <label style="display:block;font-size:14px;font-weight:600;color:#111827;margin-bottom:6px">무슨 요일에 배정할까요?</label>
+          <div class="day-chips" id="dayChips"></div>
         </div>
       </div>
-
+      <input type="hidden" id="nextDay" value="5">
     </div>
   </div>
 
@@ -526,6 +533,7 @@ function setMode(m){
   state.mode = m;
   document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
   document.getElementById('weeklyBox').style.display = m === 'weekly' ? '' : 'none';
+  document.getElementById('dayBox').style.display = m === 'weekly' ? '' : 'none';
   document.getElementById('modeNote').innerHTML = m === 'weekly'
     ? '정해진 요일마다 자동으로 다음 책이 배정됩니다.'
     : '지금 배정된 책을 다 풀면 다음 책이 배정됩니다.';
