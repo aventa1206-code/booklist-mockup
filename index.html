@@ -525,7 +525,8 @@ function buildLevelSeg() {
     b.onmouseenter = () => { if (!on) b.style.filter = 'brightness(0.92)'; };
     b.onmouseleave = () => { b.style.filter = 'none'; };
     b.onclick = () => {
-      state.pickerLevel = grp + '-' + splitLevel(state.pickerLevel)[1];
+      // 그룹 변경 시 무조건 해당 레벨의 A단계 · STEP 1 선택
+      state.pickerLevel = grp + '-A';
       selectLevelDefaultStep();
     };
     gSeg.appendChild(b);
